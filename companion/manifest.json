@@ -1,0 +1,26 @@
+{
+	"id": "Exaplay",
+	"name": "Exaplay",
+	"shortname": "Exaplay",
+	"description": "Exaplay",
+	"version": "1.0.0",
+	"license": "MIT",
+	"repository": "git+https://github.com/bitfocus/companion-module-vioso-exaplay.git",
+	"bugs": "https://github.com/bitfocus/companion-module-vioso-exaplay/issues",
+	"maintainers": [
+		{
+			"name": "DRJKNICKEL",
+			"email": "jan-heuser@posteo.de"
+		}
+	],
+	"legacyIds": [],
+	"runtime": {
+		"type": "node18",
+		"api": "nodejs-ipc",
+		"apiVersion": "3.5.2",
+		"entrypoint": "../index.js"
+	},
+	"manufacturer": "VIOSO",
+	"products": ["Exaplay"],
+	"keywords": ["Timeline Control"]
+}
