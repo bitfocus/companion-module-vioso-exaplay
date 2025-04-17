@@ -3,7 +3,7 @@
 	"name": "Exaplay",
 	"shortname": "Exaplay",
 	"description": "Exaplay Timelinecontrol via TCP",
-	"version": "1.0.1",
+	"version": "1.0.0",
 	"license": "MIT",
 	"repository": "git+https://github.com/bitfocus/companion-module-vioso-exaplay.git",
 	"bugs": "https://github.com/bitfocus/companion-module-vioso-exaplay/issues",
