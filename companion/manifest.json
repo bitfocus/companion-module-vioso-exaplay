@@ -1,5 +1,5 @@
 {
-	"id": "companion-module-vioso-exaplay",
+	"id": "vioso-exaplay",
 	"name": "Exaplay",
 	"shortname": "Exaplay",
 	"description": "Exaplay Timelinecontrol via TCP",
