@@ -41,3 +41,5 @@ export const ConfigFields = [
   },
 ]
 
+// Note: Protocol is now hardcoded to TCP and all incoming responses
+// are always converted to strings in the module logic—no UI fields needed.
