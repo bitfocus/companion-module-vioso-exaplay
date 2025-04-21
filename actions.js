@@ -16,7 +16,7 @@ function sendData(self, sendBuf) {
       self.log('error', 'TCP socket not connected.')
     }
   } else {
-    self.log('error', 'Unknown protocol')
+    self.log('error', 'Unsupported protocol. Only TCP is supported.')
   }
 }
 
