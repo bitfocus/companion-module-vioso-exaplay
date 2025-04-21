@@ -84,7 +84,7 @@ export function getFeedbackDefinitions(self) {
           return {
             bgcolor: feedback.options.bgcolor,
             color: feedback.options.color,
-            text: `Volume ${compID}\n$(Exaplay:current_volume_${compID})`
+            text: `Volume ${compID}\n$(vioso-exaplay:current_volume_${compID})`
           }
         }
         return {}
@@ -123,7 +123,7 @@ export function getFeedbackDefinitions(self) {
           return {
             bgcolor: feedback.options.bgcolor,
             color: feedback.options.color,
-            text: `Clip Index ${compID}\n$(Exaplay:clip_index_${compID})`
+            text: `Clip Index ${compID}\n$(vioso-exaplay:clip_index_${compID})`
           }
         }
         return {}
@@ -162,7 +162,7 @@ export function getFeedbackDefinitions(self) {
           return {
             bgcolor: feedback.options.bgcolor,
             color: feedback.options.color,
-            text: `Cue Index ${compID}\n$(Exaplay:cue_index_${compID})`
+            text: `Cue Index ${compID}\n$(vioso-exaplay:cue_index_${compID})`
           }
         }
         return {}
@@ -214,7 +214,7 @@ export function getFeedbackDefinitions(self) {
             return {
               bgcolor: feedback.options.bgcolor,
               color: feedback.options.color,
-              text: `Time ${compID}\n$(Exaplay:current_time_${compID})`
+              text: `Time ${compID}\n$(vioso-exaplay:current_time_${compID})`
             }
           }
         }
@@ -254,7 +254,7 @@ export function getFeedbackDefinitions(self) {
           return {
             bgcolor: feedback.options.bgcolor,
             color: feedback.options.color,
-            text: `Frame Index ${compID}\n$(Exaplay:frame_index_${compID})`
+            text: `Frame Index ${compID}\n$(vioso-exaplay:frame_index_${compID})`
           }
         }
         return {}
@@ -288,13 +288,13 @@ export function getFeedbackDefinitions(self) {
       ],
       callback: (feedback) => {
         const compID = parseCompositionID(feedback.options.composition_id)
-        let text = `Transport: $(Exaplay:playback_status_${compID})\n` +
-                   `Volume: $(Exaplay:current_volume_${compID})\n` +
-                   `Clip Index: $(Exaplay:clip_index_${compID})\n` +
-                   `Cue Index: $(Exaplay:cue_index_${compID})\n` +
-                   `Time: $(Exaplay:current_time_${compID})\n` +
-                   `Frame: $(Exaplay:frame_index_${compID})\n` +
-                   `Duration: $(Exaplay:composition_duration_${compID})`
+        let text = `Transport: $(vioso-exaplay:playback_status_${compID})\n` +
+                   `Volume: $(vioso-exaplay:current_volume_${compID})\n` +
+                   `Clip Index: $(vioso-exaplay:clip_index_${compID})\n` +
+                   `Cue Index: $(vioso-exaplay:cue_index_${compID})\n` +
+                   `Time: $(vioso-exaplay:current_time_${compID})\n` +
+                   `Frame: $(vioso-exaplay:frame_index_${compID})\n` +
+                   `Duration: $(vioso-exaplay:composition_duration_${compID})`
         return {
           bgcolor: feedback.options.bgcolor,
           color: feedback.options.color,
