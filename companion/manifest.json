@@ -1,8 +1,8 @@
 {
 	"id": "vioso-exaplay",
-	"name": "Exaplay",
-	"shortname": "Exaplay",
-	"description": "Exaplay Timelinecontrol via TCP",
+	"name": "vioso-exaplay",
+	"shortname": "vioso-exaplay",
+	"description": "vioso-exaplay",
 	"version": "1.0.0",
 	"license": "MIT",
 	"repository": "git+https://github.com/bitfocus/companion-module-vioso-exaplay.git",
@@ -20,7 +20,7 @@
 		"apiVersion": "3.5.2",
 		"entrypoint": "../index.js"
 	},
-	"manufacturer": "VIOSO",
-	"products": ["Exaplay"],
+	"manufacturer": "vioso",
+	"products": ["exaplay"],
 	"keywords": ["Timeline Control"]
 }
