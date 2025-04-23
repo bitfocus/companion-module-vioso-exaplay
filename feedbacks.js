@@ -1,3 +1,5 @@
+
+
 /**
  * Helper: Ensures that the composition ID has the format "compX".
  * Added a fallback for undefined inputs.
