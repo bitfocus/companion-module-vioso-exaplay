@@ -1,3 +1,4 @@
+
 const CRLF = '\r\n'
 
 // Sends data over TCP. Ensures that a host is configured and that the TCP socket is connected.
@@ -9,14 +10,10 @@ function sendData(self, sendBuf) {
 
   self.log('debug', `Sending to ${self.config.host}:${self.config.port} -> ${sendBuf.toString()}`)
 
-  if (self.config.prot === 'tcp') {
-    if (self.socket?.isConnected) {
-      self.socket.send(sendBuf)
-    } else {
-      self.log('error', 'TCP socket not connected.')
-    }
+  if (self.socket?.isConnected) {
+    self.socket.send(sendBuf)
   } else {
-    self.log('error', 'Unsupported protocol. Only TCP is supported.')
+    self.log('error', 'TCP socket not connected.')
   }
 }
 
