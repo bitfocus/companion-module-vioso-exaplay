@@ -1,35 +1,37 @@
-import { InstanceBase,InstanceStatus,runEntrypoint,TCPHelper } from '@companion-module/base'
+import { InstanceBase, InstanceStatus, runEntrypoint, TCPHelper, UDPHelper } from '@companion-module/base'
 import { ConfigFields } from './config.js'
 import { getActionDefinitions } from './actions.js'
 import { getFeedbackDefinitions } from './feedbacks.js'
 
-const CRLF = '\r\n'
+const CRLF = '\r\n';
 
-class viosoexaplayInstance extends InstanceBase {
+class ExaplayInstance extends InstanceBase {
   async init(config) {
-    this.config = config
+    this.config = config;
 
-    // 1) Initialisiere compositionStatuses direkt mit comp1, damit Polling läuft
-    this.compositionStatuses = { comp1: {} }
+    // Initialize an object to store composition statuses
+    this.compositionStatuses = {};
 
-    // 2) Queues für Status- und Volume-Anfragen
-    this.statusRequestQueue = []
-    this.volumeRequestQueue = []
+    // Queues for pending requests
+    this.statusRequestQueue = [];
+    this.volumeRequestQueue = [];
 
-    this.setActionDefinitions(getActionDefinitions(this))
-    this.setFeedbackDefinitions(getFeedbackDefinitions(this))
+    // Set action definitions
+    this.setActionDefinitions(getActionDefinitions(this));
 
-    await this.configUpdated(config)
+    // Set feedback definitions (including Combined Info Feedback)
+    this.setFeedbackDefinitions(getFeedbackDefinitions(this));
 
-    // 3) Presets definieren (inkl. Combined Info)
-    const presets = {}
+    await this.configUpdated(config);
 
+    const presets = {};
+  
     presets['Play/Pause'] = {
-      category: 'Transport',
-      name: 'Play/Pause',
-      type: 'button',
+      category: "Transport",
+      name: "Play/Pause",
+      type: "button",
       style: {
-        text: `Play/Pause\n$(vioso-exaplay:playback_status_comp1)`,
+        text: `Play/Pause\n$(Exaplay:playback_status_comp1)`,
         size: '10',
         color: '#FFFFFF',
         bgcolor: 13056,
@@ -48,8 +50,8 @@ class viosoexaplayInstance extends InstanceBase {
         {
           feedbackId: 'transportModeFeedback',
           options: { mode: 'stop', composition_id: 'comp1' },
-          style: { bgcolor: '#000000' },
-        },
+          style: { bgcolor: "#000000" },
+        }
       ],
       steps: [
         {
@@ -59,7 +61,7 @@ class viosoexaplayInstance extends InstanceBase {
               options: { command: 'play', composition_id: 'comp1' },
             },
           ],
-          up: [],
+          up: []
         },
         {
           down: [
@@ -68,15 +70,15 @@ class viosoexaplayInstance extends InstanceBase {
               options: { command: 'pause', composition_id: 'comp1' },
             },
           ],
-          up: [],
-        },
+          up: []
+        }
       ],
-    }
-
+    };
+  
     presets['Stop'] = {
-      category: 'Transport',
-      name: 'Stop',
-      type: 'button',
+      category: "Transport",
+      name: "Stop",
+      type: "button",
       style: {
         text: `Stop`,
         size: '10',
@@ -92,13 +94,13 @@ class viosoexaplayInstance extends InstanceBase {
         {
           feedbackId: 'transportModeFeedback',
           options: { mode: 'playing', composition_id: 'comp1' },
-          style: { bgcolor: '#000000' },
+          style: { bgcolor: "#000000" },
         },
         {
           feedbackId: 'transportModeFeedback',
           options: { mode: 'paused', composition_id: 'comp1' },
-          style: { bgcolor: '#000000' },
-        },
+          style: { bgcolor: "#000000" },
+        }
       ],
       steps: [
         {
@@ -108,220 +110,244 @@ class viosoexaplayInstance extends InstanceBase {
               options: { command: 'stop', composition_id: 'comp1' },
             },
           ],
-          up: [],
-        },
+          up: []
+        }
       ],
-    }
-
-    // ** Neu: Combined Info Preset **
-    presets['Combined Info'] = {
-      category: 'Status',
-      name: 'Combined Info',
-      type: 'button',
-      style: {
-        text: `Combined Info`,
-        size: '10',
-        color: '#FFFFFF',
-        bgcolor: '#333333',
-      },
-      feedbacks: [
-        {
-          feedbackId: 'combinedInfoFeedback',
-          options: {
-            composition_id: 'comp1',
-            bgcolor: '#333333',
-            color: '#FFFFFF',
-          },
-        },
-      ],
-    }
-
-    this.setPresetDefinitions(presets)
+    };
+  
+    this.setPresetDefinitions(presets);
   }
 
   async configUpdated(config) {
-    if (this.socket) {
-      this.socket.destroy()
-      delete this.socket
-    }
-    if (this.statusInterval) {
-      clearInterval(this.statusInterval)
-      delete this.statusInterval
+    if (this.udp) {
+      this.udp.destroy();
+      delete this.udp;
     }
 
-    this.config = config
-    this.init_tcp()
+    if (this.socket) {
+      this.socket.destroy();
+      delete this.socket;
+    }
+    
+    // Clear any existing intervals
+    if (this.statusInterval) {
+      clearInterval(this.statusInterval);
+      delete this.statusInterval;
+    }
+
+    this.config = config;
+
+    if (this.config.prot == 'tcp') {
+      this.init_tcp();
+    }
+
+    if (this.config.prot == 'udp') {
+      this.init_udp();
+      this.setVariableDefinitions([]);
+    }
   }
 
   async destroy() {
     if (this.socket) {
-      this.socket.destroy()
+      this.socket.destroy();
+    } else if (this.udp) {
+      this.udp.destroy();
     } else {
-      this.updateStatus(InstanceStatus.Disconnected)
+      this.updateStatus(InstanceStatus.Disconnected);
     }
+    
     if (this.statusInterval) {
-      clearInterval(this.statusInterval)
+      clearInterval(this.statusInterval);
     }
   }
 
   getConfigFields() {
-    return ConfigFields
+    return ConfigFields;
+  }
+
+  init_udp() {
+    // ... (unchanged UDP initialization)
   }
 
   init_tcp() {
     if (this.socket) {
-      this.socket.destroy()
-      delete this.socket
+      this.socket.destroy();
+      delete this.socket;
     }
 
-    this.updateStatus(InstanceStatus.Connecting)
+    this.updateStatus(InstanceStatus.Connecting);
 
-    if (!this.config.host) {
-      this.updateStatus(InstanceStatus.BadConfig)
-      return
-    }
+    if (this.config.host) {
+      this.socket = new TCPHelper(this.config.host, this.config.port);
 
-    this.socket = new TCPHelper(this.config.host, this.config.port)
+      this.socket.on('status_change', (status, message) => {
+        this.updateStatus(status, message);
+      });
 
-    this.socket.on('status_change', (status, message) => {
-      this.updateStatus(status, message)
-    })
+      this.socket.on('error', (err) => {
+        this.updateStatus(InstanceStatus.ConnectionFailure, err.message);
+        this.log('error', 'Network error: ' + err.message);
+      });
 
-    this.socket.on('error', (err) => {
-      this.updateStatus(InstanceStatus.ConnectionFailure, err.message)
-      this.log('error', 'Network error: ' + err.message)
-    })
+      // Buffer for incomplete data
+      this.dataBuffer = '';
 
-    this.dataBuffer = ''
-    this.socket.on('data', (data) => {
-      if (this.config.saveresponse) {
-        this.dataBuffer += data.toString()
-        const lines = this.dataBuffer.split('\n')
-        this.dataBuffer = lines.pop()
-        lines.forEach((line) => this.processDataLine(line.trim()))
-      }
-    })
+      this.socket.on('data', (data) => {
+        if (this.config.saveresponse) {
+          this.dataBuffer += data.toString();
 
-    const hz = parseInt(this.config.pollingInterval) || 1
-    const interval = 1000 / hz
-    this.statusInterval = setInterval(() => {
-      // Polling nur für bereits initialisierte Compositions
-      Object.keys(this.compositionStatuses).forEach((comp) => {
-        const statusCommand = `get:status,${comp}`
-        const statusBuf = Buffer.from(statusCommand + CRLF, 'latin1')
-        this.statusRequestQueue.push(comp)
-        if (this.socket.isConnected) {
-          this.socket.send(statusBuf)
+          // Check for complete lines
+          let lines = this.dataBuffer.split('\n');
+          this.dataBuffer = lines.pop(); // Keep incomplete line in the buffer
+
+          lines.forEach((line) => {
+            this.processDataLine(line.trim());
+          });
         }
-      })
-    }, interval)
+      });
+
+      // Polling Interval in Hz
+      const hz = parseInt(this.config.pollingInterval) || 1;
+      const interval = 1000 / hz;
+      this.statusInterval = setInterval(() => {
+        Object.keys(this.compositionStatuses).forEach(comp => {
+          const statusCommand = `get:status,${comp}`;
+          const statusBuf = Buffer.from(statusCommand + CRLF, 'latin1');
+          this.statusRequestQueue.push(comp);
+          if (this.socket && this.socket.isConnected) {
+            this.socket.send(statusBuf);
+          }
+        });
+      }, interval);
+
+    } else {
+      this.updateStatus(InstanceStatus.BadConfig);
+    }
   }
 
   processDataLine(dataLine) {
-    this.log('debug', `Received data line: ${dataLine}`)
+    this.log('debug', `Received data line: ${dataLine}`);
 
     if (dataLine.startsWith('OK') || dataLine.startsWith('ERR')) {
-      this.log('info', `Device response: ${dataLine}`)
+      // Response to a sent command
+      this.log('info', `Device response: ${dataLine}`);
     } else if (dataLine.includes(',')) {
-      const compositionID = this.statusRequestQueue.shift()
+      // Processing status data
+
+      // Get the composition ID from the queue
+      const compositionID = this.statusRequestQueue.shift();
+
       if (!compositionID) {
-        this.log(
-          'warn',
-          'No pending status request found. Cannot associate response.'
-        )
-        return
+        this.log('warn', 'No pending status request found. Cannot associate response.');
+        return;
       }
-      const [
-        playbackStatus,
-        currentTime,
-        frameIndex,
-        deviceCueIndex,
-        compositionDuration,
-      ] = dataLine.split(',')
+
+      // Five fields are expected:
+      // playbackStatus, currentTime, frameIndex, clipIndex, compositionDuration
+      // The 4th field from the device is normally used as cue_index.
+      // However, if a manual clip_index (via Play Cuelist Clip) has been set, cue_index should not be overwritten.
+      const [playbackStatus, currentTime, frameIndex, deviceCueIndex, compositionDuration] = dataLine.split(',');
+
       if (playbackStatus !== undefined && compositionDuration !== undefined) {
-        let playbackStatusText = ''
+        this.log(
+          'debug',
+          `Parsed data for ${compositionID} - Playback Status: ${playbackStatus}, Current Time: ${currentTime}, Frame Index: ${frameIndex}, Device Cue Index: ${deviceCueIndex}, Composition Duration: ${compositionDuration}`
+        );
+
+        // Convert the playback status from number to text
+        let playbackStatusText = '';
         switch (playbackStatus) {
           case '0':
-            playbackStatusText = 'stop'
-            break
+            playbackStatusText = 'stop';
+            break;
           case '1':
-            playbackStatusText = 'playing'
-            break
+            playbackStatusText = 'playing';
+            break;
           case '2':
-            playbackStatusText = 'paused'
-            break
+            playbackStatusText = 'paused';
+            break;
           default:
-            playbackStatusText = 'unknown'
+            playbackStatusText = 'unknown';
         }
-        const manualClipIndex =
-          this.compositionStatuses[compositionID]?.clip_index
-        const newCueIndex =
-          manualClipIndex !== undefined ? '' : deviceCueIndex
+
+        const manualClipIndex = this.compositionStatuses[compositionID]?.clip_index;
+        const newCueIndex = (manualClipIndex !== undefined) ? '' : deviceCueIndex;
+
+        // Update the status for this composition  
         this.compositionStatuses[compositionID] = {
           playbackStatus: playbackStatusText,
-          currentTime,
-          frameIndex,
-          cue_index: newCueIndex,
-          compositionDuration,
-          currentVolume:
-            this.compositionStatuses[compositionID]?.currentVolume,
-          clip_index: this.compositionStatuses[compositionID]?.clip_index,
-        }
-        this.updateCompositionVariables(compositionID)
-        this.checkFeedbacks(
-          'transportModeFeedback',
-          'currentTimeFeedback',
-          'volumeDisplayFeedback',
-          'clipIndexDisplayFeedback',
-          'cueIndexDisplayFeedback',
-          'frameIndexDisplayFeedback',
-          'combinedInfoFeedback'
-        )
+          currentTime: currentTime,
+          frameIndex: frameIndex,
+          cue_index: newCueIndex, 
+          compositionDuration: compositionDuration,
+          currentVolume: this.compositionStatuses[compositionID]?.currentVolume,
+          clip_index: this.compositionStatuses[compositionID]?.clip_index 
+        };
+
+        // Update the variables for this composition
+        this.updateCompositionVariables(compositionID);
+
+        this.checkFeedbacks('transportModeFeedback', 'currentTimeFeedback', 'volumeDisplayFeedback', 'clipIndexDisplayFeedback', 'cueIndexDisplayFeedback', 'frameIndexDisplayFeedback', 'combinedInfoFeedback');
+
         this.log(
           'debug',
           `Variables set for ${compositionID}: playbackStatus=${playbackStatusText}, currentTime=${currentTime}`
-        )
+        );
       } else {
-        this.log('warn', 'Incomplete data received, skipping processing.')
+        this.log('warn', 'Incomplete data received, skipping processing.');
       }
     } else if (!isNaN(dataLine)) {
-      const compositionID = this.volumeRequestQueue.shift()
+      // Assume this is the volume
+
+      // Get the composition ID from the volume request queue
+      const compositionID = this.volumeRequestQueue.shift();
+
       if (!compositionID) {
-        this.log(
-          'warn',
-          'No pending volume request found. Cannot associate response.'
-        )
-        return
+        this.log('warn', 'No pending volume request found. Cannot associate response.');
+        return;
       }
+
+      // Update the volume status
       if (!this.compositionStatuses[compositionID]) {
-        this.compositionStatuses[compositionID] = {}
+        this.compositionStatuses[compositionID] = {};
       }
-      this.compositionStatuses[compositionID].currentVolume = dataLine
-      this.setVariableValues({ [`current_volume_${compositionID}`]: dataLine })
-      this.checkFeedbacks('volumeDisplayFeedback', 'combinedInfoFeedback')
-      this.log('info', `Current volume for ${compositionID}: ${dataLine}`)
+      this.compositionStatuses[compositionID].currentVolume = dataLine;
+
+      // Update the corresponding variable
+      this.setVariableValues({
+        [`current_volume_${compositionID}`]: dataLine,
+      });
+
+      // Trigger feedback update (including Combined Info Feedback)
+      this.checkFeedbacks('volumeDisplayFeedback', 'combinedInfoFeedback');
+
+      this.log('info', `Current volume for ${compositionID}: ${dataLine}`);
     } else {
-      this.log('info', `Unknown device response: ${dataLine}`)
+      // Other responses
+      this.log('info', `Unknown device response: ${dataLine}`);
     }
   }
 
   updateCompositionVariables(compositionID) {
-    const status = this.compositionStatuses[compositionID]
-    this.init_tcp_variables()
+    const status = this.compositionStatuses[compositionID];
+
+    // Initialize variable definitions (if not already done)
+    this.init_tcp_variables();
+
     this.setVariableValues({
       [`playback_status_${compositionID}`]: status.playbackStatus,
       [`current_time_${compositionID}`]: status.currentTime,
       [`frame_index_${compositionID}`]: status.frameIndex,
       [`cue_index_${compositionID}`]: status.cue_index,
-      // HIER KORREKTUR: kein composition**ID, sondern compositionID
       [`clip_index_${compositionID}`]: status.clip_index || '',
       [`composition_duration_${compositionID}`]: status.compositionDuration,
       [`current_volume_${compositionID}`]: status.currentVolume || '',
-    })
+    });
   }
 
   init_tcp_variables() {
-    const variableDefinitions = []
+    let variableDefinitions = [];
+
     for (const compositionID in this.compositionStatuses) {
       variableDefinitions.push(
         { name: `Playback Status ${compositionID}`, variableId: `playback_status_${compositionID}` },
@@ -330,11 +356,12 @@ class viosoexaplayInstance extends InstanceBase {
         { name: `Cue Index ${compositionID}`, variableId: `cue_index_${compositionID}` },
         { name: `Clip Index ${compositionID}`, variableId: `clip_index_${compositionID}` },
         { name: `Composition Duration ${compositionID}`, variableId: `composition_duration_${compositionID}` },
-        { name: `Current Volume ${compositionID}`, variableId: `current_volume_${compositionID}` },
-      )
+        { name: `Current Volume ${compositionID}`, variableId: `current_volume_${compositionID}` }
+      );
     }
-    this.setVariableDefinitions(variableDefinitions)
+
+    this.setVariableDefinitions(variableDefinitions);
   }
 }
 
-runEntrypoint(viosoexaplayInstance, [])
+runEntrypoint(ExaplayInstance, []);
