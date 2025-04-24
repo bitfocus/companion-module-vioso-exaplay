@@ -1,4 +1,4 @@
-import { InstanceBase,InstanceStatus,runEntrypoint,TCPHelper } from '@companion-module/base'
+import { InstanceBase, InstanceStatus, runEntrypoint, TCPHelper } from '@companion-module/base'
 import { ConfigFields } from './config.js'
 import { getActionDefinitions } from './actions.js'
 import { getFeedbackDefinitions } from './feedbacks.js'
@@ -9,10 +9,10 @@ class viosoexaplayInstance extends InstanceBase {
   async init(config) {
     this.config = config
 
-    // 1) Initialisiere compositionStatuses direkt mit comp1, damit Polling läuft
+    // 1) Initialize compositionStatuses immediately with comp1 so polling runs
     this.compositionStatuses = { comp1: {} }
 
-    // 2) Queues für Status- und Volume-Anfragen
+    // 2) Queues for status and volume requests
     this.statusRequestQueue = []
     this.volumeRequestQueue = []
 
@@ -21,7 +21,7 @@ class viosoexaplayInstance extends InstanceBase {
 
     await this.configUpdated(config)
 
-    // 3) Presets definieren (inkl. Combined Info)
+    // 3) Define presets (transport controls)
     const presets = {}
 
     presets['Play/Pause'] = {
@@ -113,29 +113,6 @@ class viosoexaplayInstance extends InstanceBase {
       ],
     }
 
-    // ** Neu: Combined Info Preset **
-    presets['Combined Info'] = {
-      category: 'Status',
-      name: 'Combined Info',
-      type: 'button',
-      style: {
-        text: `Combined Info`,
-        size: '10',
-        color: '#FFFFFF',
-        bgcolor: '#333333',
-      },
-      feedbacks: [
-        {
-          feedbackId: 'combinedInfoFeedback',
-          options: {
-            composition_id: 'comp1',
-            bgcolor: '#333333',
-            color: '#FFFFFF',
-          },
-        },
-      ],
-    }
-
     this.setPresetDefinitions(presets)
   }
 
@@ -205,7 +182,7 @@ class viosoexaplayInstance extends InstanceBase {
     const hz = parseInt(this.config.pollingInterval) || 1
     const interval = 1000 / hz
     this.statusInterval = setInterval(() => {
-      // Polling nur für bereits initialisierte Compositions
+      // Poll only for already initialized compositions
       Object.keys(this.compositionStatuses).forEach((comp) => {
         const statusCommand = `get:status,${comp}`
         const statusBuf = Buffer.from(statusCommand + CRLF, 'latin1')
@@ -274,8 +251,7 @@ class viosoexaplayInstance extends InstanceBase {
           'volumeDisplayFeedback',
           'clipIndexDisplayFeedback',
           'cueIndexDisplayFeedback',
-          'frameIndexDisplayFeedback',
-          'combinedInfoFeedback'
+          'frameIndexDisplayFeedback'
         )
         this.log(
           'debug',
@@ -298,7 +274,7 @@ class viosoexaplayInstance extends InstanceBase {
       }
       this.compositionStatuses[compositionID].currentVolume = dataLine
       this.setVariableValues({ [`current_volume_${compositionID}`]: dataLine })
-      this.checkFeedbacks('volumeDisplayFeedback', 'combinedInfoFeedback')
+      this.checkFeedbacks('volumeDisplayFeedback')
       this.log('info', `Current volume for ${compositionID}: ${dataLine}`)
     } else {
       this.log('info', `Unknown device response: ${dataLine}`)
@@ -313,7 +289,7 @@ class viosoexaplayInstance extends InstanceBase {
       [`current_time_${compositionID}`]: status.currentTime,
       [`frame_index_${compositionID}`]: status.frameIndex,
       [`cue_index_${compositionID}`]: status.cue_index,
-      // HIER KORREKTUR: kein composition**ID, sondern compositionID
+      // Here corrected: no 'composition**ID', but compositionID
       [`clip_index_${compositionID}`]: status.clip_index || '',
       [`composition_duration_${compositionID}`]: status.compositionDuration,
       [`current_volume_${compositionID}`]: status.currentVolume || '',
