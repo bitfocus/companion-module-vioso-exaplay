@@ -1,11 +1,6 @@
-
-
-/**
- * Helper: Ensures that the composition ID has the format "compX".
- * Added a fallback for undefined inputs.
- */
+// feedbacks.js
 function parseCompositionID(input) {
-  input = input || ''  // fallback to empty string if undefined
+  input = input || ''  
   if (input.toLowerCase().startsWith("comp")) {
     return input
   }
@@ -21,7 +16,7 @@ export function getFeedbackDefinitions(self) {
       options: [
         {
           type: 'textinput',
-          label: 'Choose composition ID',
+          label: 'Composition ID',
           id: 'composition_id',
           default: 'comp1',
           tooltip: 'Enter the composition ID manually. E.g. "1" or "comp1".',
@@ -46,13 +41,81 @@ export function getFeedbackDefinitions(self) {
         const compID = parseCompositionID(feedback.options.composition_id)
         const expectedMode = feedback.options.mode
         const status = self.compositionStatuses[compID]
-
-        if (status && status.playbackStatus === expectedMode) {
-          return true
-        }
-        return false
+        return status && status.playbackStatus === expectedMode
       },
     },
+
+    cueActiveFeedback: {
+      type: 'boolean',
+      name: 'Cue/Clip Active Feedback',
+      description: 'Lights up when the selected cue/clip is active',
+      options: [
+        {
+          type: 'textinput',
+          label: 'Composition ID',
+          id: 'composition_id',
+          default: 'comp1',
+          tooltip: 'E.g. "1" or "comp1".',
+        },
+        {
+          type: 'textinput',
+          label: 'Cue/Clip Number',
+          id: 'cue_number',
+          default: '1',
+          tooltip: 'Number of the cue or clip.',
+        },
+      ],
+      defaultStyle: {
+        color: '#FFFFFF',
+        bgcolor: '#00FF00',
+      },
+      callback: (feedback) => {
+        const compID = parseCompositionID(feedback.options.composition_id)
+        const cueNumber = feedback.options.cue_number
+        const status = self.compositionStatuses[compID]
+        return status && (status.cue_index == cueNumber)
+      },
+    },
+
+    cueIndexDisplayFeedback: {
+      type: 'advanced',
+      name: 'Cue/Clip Index Display Feedback',
+      description: 'Displays the current cue/clip index on the button',
+      options: [
+        {
+          type: 'textinput',
+          label: 'Composition ID',
+          id: 'composition_id',
+          default: 'comp1',
+          tooltip: 'E.g. "1" or "comp1".',
+        },
+        {
+          type: 'colorpicker',
+          label: 'Background Color',
+          id: 'bgcolor',
+          default: '#333333',
+        },
+        {
+          type: 'colorpicker',
+          label: 'Text Color',
+          id: 'color',
+          default: '#FFFFFF',
+        },
+      ],
+      callback: (feedback) => {
+        const compID = parseCompositionID(feedback.options.composition_id)
+        const status = self.compositionStatuses[compID]
+        if (status && status.cue_index !== undefined) {
+          return {
+            bgcolor: feedback.options.bgcolor,
+            color: feedback.options.color,
+            text: `Cue/Clip Index ${compID}\n$(vioso-exaplay:cue_index_${compID})`,
+          }
+        }
+        return {}
+      },
+    },
+
     volumeDisplayFeedback: {
       type: 'advanced',
       name: 'Volume Display Feedback',
@@ -60,7 +123,7 @@ export function getFeedbackDefinitions(self) {
       options: [
         {
           type: 'textinput',
-          label: 'Choose composition ID',
+          label: 'Composition ID',
           id: 'composition_id',
           default: 'comp1',
           tooltip: 'Enter the composition ID manually. E.g. "1" or "comp1".',
@@ -81,90 +144,11 @@ export function getFeedbackDefinitions(self) {
       callback: (feedback) => {
         const compID = parseCompositionID(feedback.options.composition_id)
         const status = self.compositionStatuses[compID]
-  
         if (status && status.currentVolume !== undefined) {
           return {
             bgcolor: feedback.options.bgcolor,
             color: feedback.options.color,
-            text: `Volume ${compID}\n$(vioso-exaplay:current_volume_${compID})`
-          }
-        }
-        return {}
-      },
-    },
-    clipIndexDisplayFeedback: {
-      type: 'advanced',
-      name: 'Clip Index Display Feedback',
-      description: 'Displays the current clip index (referring to the Play Cuelist Clip Action)',
-      options: [
-        {
-          type: 'textinput',
-          label: 'Choose composition ID',
-          id: 'composition_id',
-          default: 'comp1',
-          tooltip: 'Enter the composition ID manually. E.g. "1" or "comp1".',
-        },
-        {
-          type: 'colorpicker',
-          label: 'Background Color',
-          id: 'bgcolor',
-          default: '#000000',
-        },
-        {
-          type: 'colorpicker',
-          label: 'Text Color',
-          id: 'color',
-          default: '#FFFFFF',
-        },
-      ],
-      callback: (feedback) => {
-        const compID = parseCompositionID(feedback.options.composition_id)
-        const status = self.compositionStatuses[compID]
-  
-        if (status && status.clip_index !== undefined) {
-          return {
-            bgcolor: feedback.options.bgcolor,
-            color: feedback.options.color,
-            text: `Clip Index ${compID}\n$(vioso-exaplay:clip_index_${compID})`
-          }
-        }
-        return {}
-      },
-    },
-    cueIndexDisplayFeedback: {
-      type: 'advanced',
-      name: 'Cue Index Display Feedback',
-      description: 'Displays the current cue index (referring to the Go to Cue Action)',
-      options: [
-        {
-          type: 'textinput',
-          label: 'Choose composition ID',
-          id: 'composition_id',
-          default: 'comp1',
-          tooltip: 'Enter the composition ID manually. E.g. "1" or "comp1".',
-        },
-        {
-          type: 'colorpicker',
-          label: 'Background Color',
-          id: 'bgcolor',
-          default: '#000000',
-        },
-        {
-          type: 'colorpicker',
-          label: 'Text Color',
-          id: 'color',
-          default: '#FFFFFF',
-        },
-      ],
-      callback: (feedback) => {
-        const compID = parseCompositionID(feedback.options.composition_id)
-        const status = self.compositionStatuses[compID]
-  
-        if (status && status.cue_index) {
-          return {
-            bgcolor: feedback.options.bgcolor,
-            color: feedback.options.color,
-            text: `Cue Index ${compID}\n$(vioso-exaplay:cue_index_${compID})`
+            text: `Volume ${compID}\n$(vioso-exaplay:current_volume_${compID})`,
           }
         }
         return {}
@@ -177,7 +161,7 @@ export function getFeedbackDefinitions(self) {
       options: [
         {
           type: 'textinput',
-          label: 'Choose composition ID',
+          label: 'Composition ID',
           id: 'composition_id',
           default: 'comp1',
           tooltip: 'Enter the composition ID manually. E.g. "1" or "comp1".',
@@ -210,14 +194,11 @@ export function getFeedbackDefinitions(self) {
         const compID = parseCompositionID(feedback.options.composition_id)
         const targetTime = parseFloat(feedback.options.time)
         const status = self.compositionStatuses[compID]
-  
-        if (status && status.currentTime !== undefined) {
-          if (parseFloat(status.currentTime) >= targetTime) {
-            return {
-              bgcolor: feedback.options.bgcolor,
-              color: feedback.options.color,
-              text: `Time ${compID}\n$(vioso-exaplay:current_time_${compID})`
-            }
+        if (status && status.currentTime !== undefined && parseFloat(status.currentTime) >= targetTime) {
+          return {
+            bgcolor: feedback.options.bgcolor,
+            color: feedback.options.color,
+            text: `Time ${compID}\n$(vioso-exaplay:current_time_${compID})`,
           }
         }
         return {}
@@ -230,7 +211,7 @@ export function getFeedbackDefinitions(self) {
       options: [
         {
           type: 'textinput',
-          label: 'Choose composition ID',
+          label: 'Composition ID',
           id: 'composition_id',
           default: 'comp1',
           tooltip: 'Enter the composition ID manually. E.g. "1" or "comp1".',
@@ -251,12 +232,11 @@ export function getFeedbackDefinitions(self) {
       callback: (feedback) => {
         const compID = parseCompositionID(feedback.options.composition_id)
         const status = self.compositionStatuses[compID]
-  
         if (status && status.frameIndex !== undefined) {
           return {
             bgcolor: feedback.options.bgcolor,
             color: feedback.options.color,
-            text: `Frame Index ${compID}\n$(vioso-exaplay:frame_index_${compID})`
+            text: `Frame Index ${compID}\n$(vioso-exaplay:frame_index_${compID})`,
           }
         }
         return {}
@@ -268,9 +248,8 @@ export function getFeedbackDefinitions(self) {
       description: 'Displays all collected information bundled on one button',
       options: [
         {
-          // Changed id to 'composition_id' for consistency
           type: 'textinput',
-          label: 'Choose composition ID',
+          label: 'Composition ID',
           id: 'composition_id',
           default: 'comp1',
           tooltip: 'Enter the composition ID manually. E.g. "1" or "comp1".',
@@ -290,17 +269,18 @@ export function getFeedbackDefinitions(self) {
       ],
       callback: (feedback) => {
         const compID = parseCompositionID(feedback.options.composition_id)
-        let text = `Transport: $(vioso-exaplay:playback_status_${compID})\n` +
-                   `Volume: $(vioso-exaplay:current_volume_${compID})\n` +
-                   `Clip Index: $(vioso-exaplay:clip_index_${compID})\n` +
-                   `Cue Index: $(vioso-exaplay:cue_index_${compID})\n` +
-                   `Time: $(vioso-exaplay:current_time_${compID})\n` +
-                   `Frame: $(vioso-exaplay:frame_index_${compID})\n` +
-                   `Duration: $(vioso-exaplay:composition_duration_${compID})`
+        const text =
+          `Transport: $(vioso-exaplay:playback_status_${compID})\n` +
+          `Volume: $(vioso-exaplay:current_volume_${compID})\n` +
+          `Clip Index: $(vioso-exaplay:clip_index_${compID})\n` +
+          `Cue Index: $(vioso-exaplay:cue_index_${compID})\n` +
+          `Time: $(vioso-exaplay:current_time_${compID})\n` +
+          `Frame: $(vioso-exaplay:frame_index_${compID})\n` +
+          `Duration: $(vioso-exaplay:composition_duration_${compID})`
         return {
           bgcolor: feedback.options.bgcolor,
           color: feedback.options.color,
-          text: text
+          text: text,
         }
       },
     },
