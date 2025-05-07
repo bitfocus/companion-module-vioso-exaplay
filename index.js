@@ -6,30 +6,48 @@ import { getFeedbackDefinitions } from './feedbacks.js'
 const CRLF = '\r\n'
 
 class viosoexaplayInstance extends InstanceBase {
-  async init(config) {
-    this.config = config
-
-    // 1) Initialize compositionStatuses immediately with comp1 so polling runs
-    this.compositionStatuses = { comp1: {} }
-
-    // 2) Queues for status and volume requests
+  constructor(config) {
+    super(config)
+    this.compositionStatuses = {}
     this.statusRequestQueue = []
     this.volumeRequestQueue = []
+  }
+
+  ensureComposition(id) {
+    if (!id) return
+    if (!this.compositionStatuses[id]) {
+      this.compositionStatuses[id] = {
+        playbackStatus: 'unknown',
+        currentTime: '0',
+        frameIndex: '0',
+        cue_index: '',
+        clip_index: '',
+        compositionDuration: '0',
+        currentVolume: ''
+      }
+      this.init_tcp_variables()
+      this.updateCompositionVariables(id)
+    }
+  }
+
+  async init(config) {
+    this.config = config
 
     this.setActionDefinitions(getActionDefinitions(this))
     this.setFeedbackDefinitions(getFeedbackDefinitions(this))
 
     await this.configUpdated(config)
 
-    // 3) Define presets (transport controls)
+    // Presets
     const presets = {}
 
+    
     presets['Play/Pause'] = {
       category: 'Transport',
       name: 'Play/Pause',
       type: 'button',
       style: {
-        text: `Play/Pause\n$(vioso-exaplay:playback_status_comp1)`,
+        text: `Play/Pause\n $(vioso-exaplay:playback_status_comp)`,
         size: '10',
         color: '#FFFFFF',
         bgcolor: 13056,
@@ -37,37 +55,27 @@ class viosoexaplayInstance extends InstanceBase {
       feedbacks: [
         {
           feedbackId: 'transportModeFeedback',
-          options: { mode: 'playing', composition_id: 'comp1' },
+          options: { mode: 'playing', composition_id: '' },
           style: { bgcolor: 13056 },
         },
         {
           feedbackId: 'transportModeFeedback',
-          options: { mode: 'paused', composition_id: 'comp1' },
+          options: { mode: 'paused', composition_id: '' },
           style: { bgcolor: 10046464 },
         },
         {
           feedbackId: 'transportModeFeedback',
-          options: { mode: 'stop', composition_id: 'comp1' },
+          options: { mode: 'stop', composition_id: '' },
           style: { bgcolor: '#000000' },
         },
       ],
       steps: [
         {
-          down: [
-            {
-              actionId: 'transportmode',
-              options: { command: 'play', composition_id: 'comp1' },
-            },
-          ],
+          down: [ { actionId: 'transportmode', options: { command: 'play', composition_id: '' } } ],
           up: [],
         },
         {
-          down: [
-            {
-              actionId: 'transportmode',
-              options: { command: 'pause', composition_id: 'comp1' },
-            },
-          ],
+          down: [ { actionId: 'transportmode', options: { command: 'pause', composition_id: '' } } ],
           up: [],
         },
       ],
@@ -86,31 +94,106 @@ class viosoexaplayInstance extends InstanceBase {
       feedbacks: [
         {
           feedbackId: 'transportModeFeedback',
-          options: { mode: 'stop', composition_id: 'comp1' },
+          options: { mode: 'stop', composition_id: '' },
           style: { bgcolor: '#660000' },
         },
         {
           feedbackId: 'transportModeFeedback',
-          options: { mode: 'playing', composition_id: 'comp1' },
+          options: { mode: 'playing', composition_id: '' },
           style: { bgcolor: '#000000' },
         },
         {
           feedbackId: 'transportModeFeedback',
-          options: { mode: 'paused', composition_id: 'comp1' },
+          options: { mode: 'paused', composition_id: '' },
           style: { bgcolor: '#000000' },
         },
       ],
       steps: [
         {
-          down: [
-            {
-              actionId: 'transportmode',
-              options: { command: 'stop', composition_id: 'comp1' },
-            },
-          ],
+          down: [ { actionId: 'transportmode', options: { command: 'stop', composition_id: '' } } ],
           up: [],
         },
       ],
+    }
+
+    
+    presets['Set Cue/Clip'] = {
+      category: 'Transport',
+      name: 'Set Cue/Clip',
+      type: 'button',
+      style: {
+        text: 'Set Cue/Clip',
+        size: '14',
+        color: 16777215,
+        bgcolor: 0x330033,
+      },
+      feedbacks: [
+        {
+          feedbackId: 'cueActiveFeedback',
+          options: { composition_id: '', cue_number: '' },
+          style: { bgcolor: 0x00FF00 },
+        },
+      ],
+      steps: [
+        {
+          down: [ { actionId: 'set_cue', options: { composition_id: '', cue_number: '' } } ],
+          up: [],
+        },
+      ],
+    }
+
+  
+    presets['jump to time'] = {
+      category: 'Transport', name: 'jump to time', type: 'button',
+      style: { text: 'jump to time ', size: '14', color: 16777215, bgcolor: 0x000033 },
+      feedbacks: [],
+      steps: [ { down: [ { actionId: 'jump_to_time', options: { composition_id: '', time_in_seconds: '' } } ], up: [] } ],
+    }
+    presets['vol -'] = {
+      category: 'Transport', name: 'vol -', type: 'button',
+      style: { text: 'vol -', size: '14', color: 16777215, bgcolor: 3355392 },
+      feedbacks: [],
+      steps: [ { down: [ { actionId: 'volume_adjust', options: { composition_id: '', adjustment: '-' } } ], up: [] } ],
+    }
+    presets['vol +'] = {
+      category: 'Transport', name: 'vol +', type: 'button',
+      style: { text: 'vol +', size: '14', color: 16777215, bgcolor: 3355392 },
+      feedbacks: [],
+      steps: [ { down: [ { actionId: 'volume_adjust', options: { composition_id: '', adjustment: '+' } } ], up: [] } ],
+    }
+
+    // Feedback-Presets
+    presets['Cue/Clip Index Display'] = {
+      category: 'Feedback', name: 'Cue/Clip Index Display', type: 'button',
+      style: { text: 'Cue/Clip Index', size: '14', color: 16777215, bgcolor: 0x333333 },
+      steps: [ { down: [], up: [] } ],
+      feedbacks: [ { feedbackId: 'cueIndexDisplayFeedback', options: { composition_id: '', bgcolor: '#333333', color: '#FFFFFF' }, style: { text: 'Cue/Clip: $(vioso-exaplay:cue_index_comp1)' } } ],
+    }
+    presets['Current Time Display'] = {
+      category: 'Feedback', name: 'Current Time Display', type: 'button',
+      style: { text: 'Time:', size: '14', color: 16777215, bgcolor: 0x333333 },
+      steps: [ { down: [], up: [] } ],
+      feedbacks: [ { feedbackId: 'currentTimeFeedback', options: { composition_id: '', time: 0, bgcolor: '#333333', color: '#FFFFFF' }, style: { text: 'Time: $(vioso-exaplay:currentTime_comp1)' } } ],
+    }
+    presets['Frame Index Display'] = {
+      category: 'Feedback', name: 'Frame Index Display', type: 'button',
+      style: { text: 'Frame Index:', size: '12', color: 16777215, bgcolor: 0x333333 },
+      steps: [ { down: [], up: [] } ],
+      feedbacks: [ { feedbackId: 'frameIndexDisplayFeedback', options: { composition_id: '', bgcolor: '#333333', color: '#FFFFFF' }, style: { text: 'Frame: $(vioso-exaplay:frameIndexDisplay_comp1)' } } ],
+    }
+    presets['Volume Display'] = {
+      category: 'Feedback', name: 'Volume Display', type: 'button',
+      style: { text: 'Volume:', size: '14', color: 16777215, bgcolor: 0x333333 },
+      steps: [ { down: [], up: [] } ],
+      feedbacks: [ { feedbackId: 'volumeDisplayFeedback', options: { composition_id: '', bgcolor: '#333333', color: '#FFFFFF' }, style: { text: 'Volume: $(vioso-exaplay:volumeDisplay_comp1)' } } ],
+    }
+
+
+    presets['Combined Feedback'] = {
+      category: 'Combined Feedback', name: 'Combined Feedback', type: 'button',
+      style: { text: 'Combined Info\nTransport, Volume,\nCue, Clip, Time, Frame', size: '7', color: 16777215, bgcolor: 0x333333 },
+      steps: [ { down: [], up: [] } ],
+      feedbacks: [ { feedbackId: 'combinedInfoFeedback', options: { composition_id: '', bgcolor: '#333333', color: '#FFFFFF' } } ],
     }
 
     this.setPresetDefinitions(presets)
@@ -180,18 +263,13 @@ class viosoexaplayInstance extends InstanceBase {
     })
 
     const hz = parseInt(this.config.pollingInterval) || 1
-    const interval = 1000 / hz
     this.statusInterval = setInterval(() => {
-      // Poll only for already initialized compositions
       Object.keys(this.compositionStatuses).forEach((comp) => {
-        const statusCommand = `get:status,${comp}`
-        const statusBuf = Buffer.from(statusCommand + CRLF, 'latin1')
+        const buf = Buffer.from(`get:status,${comp}${CRLF}`, 'latin1')
         this.statusRequestQueue.push(comp)
-        if (this.socket.isConnected) {
-          this.socket.send(statusBuf)
-        }
+        if (this.socket.isConnected) this.socket.send(buf)
       })
-    }, interval)
+    }, 1000 / hz)
   }
 
   processDataLine(dataLine) {
@@ -230,10 +308,9 @@ class viosoexaplayInstance extends InstanceBase {
           default:
             playbackStatusText = 'unknown'
         }
-        const manualClipIndex =
-          this.compositionStatuses[compositionID]?.clip_index
-        const newCueIndex =
-          manualClipIndex !== undefined ? '' : deviceCueIndex
+        const prevManualCue = this.compositionStatuses[compositionID]?.cue_index
+        
+        const newCueIndex = prevManualCue || deviceCueIndex
         this.compositionStatuses[compositionID] = {
           playbackStatus: playbackStatusText,
           currentTime,
@@ -289,7 +366,6 @@ class viosoexaplayInstance extends InstanceBase {
       [`current_time_${compositionID}`]: status.currentTime,
       [`frame_index_${compositionID}`]: status.frameIndex,
       [`cue_index_${compositionID}`]: status.cue_index,
-      // Here corrected: no 'composition**ID', but compositionID
       [`clip_index_${compositionID}`]: status.clip_index || '',
       [`composition_duration_${compositionID}`]: status.compositionDuration,
       [`current_volume_${compositionID}`]: status.currentVolume || '',
