@@ -3,7 +3,7 @@
 	"name": "vioso-exaplay",
 	"shortname": "vioso-exaplay",
 	"description": "Tcp control of vioso-exaplay",
-	"version": "1.2.1",
+	"version": "1.2.2",
 	"license": "MIT",
 	"repository": "git+https://github.com/bitfocus/companion-module-vioso-exaplay.git",
 	"bugs": "https://github.com/bitfocus/companion-module-vioso-exaplay/issues",
