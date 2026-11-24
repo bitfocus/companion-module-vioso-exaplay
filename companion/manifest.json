@@ -3,7 +3,7 @@
 	"name": "vioso-exaplay",
 	"shortname": "vioso-exaplay",
 	"description": "Tcp control of vioso-exaplay",
-	"version": "1.2.3",
+	"version": "1.2.4",
 	"license": "MIT",
 	"repository": "git+https://github.com/bitfocus/companion-module-vioso-exaplay.git",
 	"bugs": "https://github.com/bitfocus/companion-module-vioso-exaplay/issues",
@@ -15,7 +15,7 @@
 	],
 	"legacyIds": [],
 	"runtime": {
-		"type": "node18",
+		"type": "node26",
 		"api": "nodejs-ipc",
 		"apiVersion": "3.5.2",
 		"entrypoint": "../index.js"
